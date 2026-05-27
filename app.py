@@ -43,7 +43,9 @@ if "clicked_lat" in st.session_state:
                     st.session_state["clicked_lat"],
                     st.session_state["clicked_lon"],
                 )
-                st.sidebar.success(f'Saved "{location_name}"')
+                del st.session_state["clicked_lat"]
+                del st.session_state["clicked_lon"]
+                st.rerun()
             else:
                 st.sidebar.warning("Please enter a name before saving.")
 
@@ -75,3 +77,5 @@ else:
                         update_favorite(fav["id"], new_name.strip())
                         st.session_state[f"editing_{fav['id']}"] = False
                         st.rerun()
+                    else:
+                        st.warning("Please enter a name before renaming.")

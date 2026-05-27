@@ -1,6 +1,7 @@
 import sqlite3
+import pathlib
 
-DB_PATH = "favorites.db"
+DB_PATH = str(pathlib.Path(__file__).parent / "favorites.db")
 
 
 def _get_connection() -> sqlite3.Connection:

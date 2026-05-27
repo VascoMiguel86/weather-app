@@ -129,12 +129,12 @@ st.markdown(
 
 # ── Map ───────────────────────────────────────────────────────────────────────
 # Version key: increment to force a fresh map when tile/settings change.
-_MAP_VER = "v4-dark"
+_MAP_VER = "v5-voyager"
 if st.session_state.get("_map_ver") != _MAP_VER:
     st.session_state["folium_map"] = folium.Map(
         location=[52.1, 5.3],
         zoom_start=7,
-        tiles="CartoDB dark_matter",
+        tiles="CartoDB Voyager",
     )
     st.session_state["_map_ver"] = _MAP_VER
 

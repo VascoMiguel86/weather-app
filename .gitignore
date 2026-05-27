@@ -2,3 +2,8 @@ favorites.db
 __pycache__/
 .pytest_cache/
 *.pyc
+
+.streamlit/
+.env
+venv/
+env/

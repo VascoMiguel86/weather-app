@@ -3,7 +3,8 @@ __pycache__/
 .pytest_cache/
 *.pyc
 
-.streamlit/
+# .streamlit/ — keep config.toml but ignore secrets.toml
+.streamlit/secrets.toml
 .env
 venv/
 env/

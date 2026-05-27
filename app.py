@@ -129,12 +129,12 @@ st.markdown(
 
 # ── Map ───────────────────────────────────────────────────────────────────────
 # Version key: increment to force a fresh map when tile/settings change.
-_MAP_VER = "v3-positron"
+_MAP_VER = "v4-dark"
 if st.session_state.get("_map_ver") != _MAP_VER:
     st.session_state["folium_map"] = folium.Map(
         location=[52.1, 5.3],
         zoom_start=7,
-        tiles="CartoDB positron",
+        tiles="CartoDB dark_matter",
     )
     st.session_state["_map_ver"] = _MAP_VER
 
@@ -149,12 +149,18 @@ map_data = st_folium(
 if map_data and map_data.get("last_clicked"):
     lat = map_data["last_clicked"]["lat"]
     lon = map_data["last_clicked"]["lng"]
-    st.session_state["clicked_lat"] = lat
-    st.session_state["clicked_lon"] = lon
-    st.session_state.pop("selected_fav", None)
-    temperature = get_temperature(lat, lon)
-    icon = "🌡️" if "Could not" not in temperature else "⚠️"
-    st.markdown(f"""
+
+    # After a save, st_folium keeps returning the old last_clicked position.
+    # _saved_click_pos marks that position as "already consumed" so we don't
+    # re-show the save form on the post-save rerun.
+    _saved_pos = st.session_state.pop("_saved_click_pos", None)
+    if _saved_pos != (lat, lon):
+        st.session_state["clicked_lat"] = lat
+        st.session_state["clicked_lon"] = lon
+        st.session_state.pop("selected_fav", None)
+        temperature = get_temperature(lat, lon)
+        icon = "🌡️" if "Could not" not in temperature else "⚠️"
+        st.markdown(f"""
     <div class="temp-card">
         <div class="tc-emoji">{icon}</div>
         <div>
@@ -191,6 +197,12 @@ if "clicked_lat" in st.session_state:
             if location_name.strip():
                 create_favorite(
                     location_name.strip(),
+                    st.session_state["clicked_lat"],
+                    st.session_state["clicked_lon"],
+                )
+                # Mark the click position as consumed so the post-rerun
+                # st_folium last_clicked doesn't re-open the save form.
+                st.session_state["_saved_click_pos"] = (
                     st.session_state["clicked_lat"],
                     st.session_state["clicked_lon"],
                 )

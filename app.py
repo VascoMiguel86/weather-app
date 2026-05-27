@@ -150,11 +150,12 @@ if map_data and map_data.get("last_clicked"):
     lat = map_data["last_clicked"]["lat"]
     lon = map_data["last_clicked"]["lng"]
 
-    # After a save, st_folium keeps returning the old last_clicked position.
-    # _saved_click_pos marks that position as "already consumed" so we don't
-    # re-show the save form on the post-save rerun.
-    _saved_pos = st.session_state.pop("_saved_click_pos", None)
-    if _saved_pos != (lat, lon):
+    # st_folium's last_clicked is sticky — it keeps returning the same
+    # coordinates on every rerun until the user actually clicks somewhere new.
+    # We track the last position we already handled in _processed_click and
+    # skip the event if it hasn't changed.
+    if (lat, lon) != st.session_state.get("_processed_click"):
+        st.session_state["_processed_click"] = (lat, lon)
         st.session_state["clicked_lat"] = lat
         st.session_state["clicked_lon"] = lon
         st.session_state.pop("selected_fav", None)
@@ -200,12 +201,6 @@ if "clicked_lat" in st.session_state:
                     st.session_state["clicked_lat"],
                     st.session_state["clicked_lon"],
                 )
-                # Mark the click position as consumed so the post-rerun
-                # st_folium last_clicked doesn't re-open the save form.
-                st.session_state["_saved_click_pos"] = (
-                    st.session_state["clicked_lat"],
-                    st.session_state["clicked_lon"],
-                )
                 del st.session_state["clicked_lat"]
                 del st.session_state["clicked_lon"]
                 st.rerun()
@@ -238,6 +233,12 @@ else:
             }
             st.session_state.pop("clicked_lat", None)
             st.session_state.pop("clicked_lon", None)
+            # Anchor _processed_click to whatever last_clicked currently is.
+            # Without this, the stale last_clicked fires on the next rerun,
+            # wipes selected_fav, and the 7-day forecast never appears.
+            if map_data and map_data.get("last_clicked"):
+                lc = map_data["last_clicked"]
+                st.session_state["_processed_click"] = (lc["lat"], lc["lng"])
             st.rerun()
 
         if col2.button("✏️", key=f"edit_{fav['id']}", help="Rename"):

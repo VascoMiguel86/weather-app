@@ -16,8 +16,14 @@ init_db()
 st.title("🌤️ Netherlands Weather Map")
 
 # --- Map ---
-m = folium.Map(location=[52.1, 5.3], zoom_start=7)
-map_data = st_folium(m, width=700, height=500)
+# Reuse the same map object across reruns so st_folium keeps a stable
+# component key and doesn't remount (and rerender-loop) on every rerun.
+if "folium_map" not in st.session_state:
+    st.session_state["folium_map"] = folium.Map(location=[52.1, 5.3], zoom_start=7)
+m = st.session_state["folium_map"]
+
+# returned_objects limits reruns to actual clicks only (not pan/zoom).
+map_data = st_folium(m, width=700, height=500, returned_objects=["last_clicked"])
 
 # --- Handle click ---
 if map_data and map_data.get("last_clicked"):

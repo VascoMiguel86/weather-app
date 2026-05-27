@@ -1,8 +1,9 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
+from datetime import datetime
 
-from weather import get_temperature
+from weather import get_temperature, get_forecast
 from database import (
     init_db,
     create_favorite,
@@ -25,14 +26,28 @@ m = st.session_state["folium_map"]
 # returned_objects limits reruns to actual clicks only (not pan/zoom).
 map_data = st_folium(m, width=700, height=500, returned_objects=["last_clicked"])
 
-# --- Handle click ---
+# --- Handle map click ---
 if map_data and map_data.get("last_clicked"):
     lat = map_data["last_clicked"]["lat"]
     lon = map_data["last_clicked"]["lng"]
     st.session_state["clicked_lat"] = lat
     st.session_state["clicked_lon"] = lon
+    st.session_state.pop("selected_fav", None)  # clear forecast when map is clicked
     temperature = get_temperature(lat, lon)
     st.info(f"Temperature at this location: **{temperature}**")
+
+# --- Show 7-day forecast when a favourite is selected ---
+if "selected_fav" in st.session_state:
+    fav = st.session_state["selected_fav"]
+    st.subheader(f"📅 7-day forecast — {fav['name']}")
+    forecast = get_forecast(fav["lat"], fav["lon"])
+    if isinstance(forecast, str):
+        st.error(forecast)
+    else:
+        for day in forecast:
+            date_obj = datetime.strptime(day["date"], "%Y-%m-%d")
+            label = date_obj.strftime("%a %d %b")
+            st.write(f"**{label}**: {day['min']}°C – {day['max']}°C")
 
 # --- Sidebar ---
 st.sidebar.title("My Favorites")
@@ -57,7 +72,7 @@ if "clicked_lat" in st.session_state:
 
 st.sidebar.markdown("---")
 
-# List all favourites with Rename and Delete buttons
+# List all favourites
 favorites = read_favorites()
 
 if not favorites:
@@ -65,7 +80,17 @@ if not favorites:
 else:
     for fav in favorites:
         col1, col2, col3 = st.sidebar.columns([3, 1, 1])
-        col1.write(fav["name"])
+
+        # Clicking the name shows the 7-day forecast in the main area
+        if col1.button(fav["name"], key=f"select_{fav['id']}"):
+            st.session_state["selected_fav"] = {
+                "name": fav["name"],
+                "lat": fav["lat"],
+                "lon": fav["lon"],
+            }
+            st.session_state.pop("clicked_lat", None)
+            st.session_state.pop("clicked_lon", None)
+            st.rerun()
 
         if col2.button("✏️", key=f"edit_{fav['id']}", help="Rename"):
             st.session_state[f"editing_{fav['id']}"] = True
